@@ -21,7 +21,7 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
   WARN = 1
   ERROR = 2
 
-  # The uri_fragment_mapper serves the possibility to manipulate the 
+  # The uri_fragment_mapper serves the possibility to manipulate the
   # uri_fragments of object references, when you parse only a sub tree
   # of a original ecore model xml file, before the instantiator tries to
   # resolve the references inside the model.
@@ -153,7 +153,7 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
   end
 
   def resolve
-    resolver = EcoreUriFragmentResolver.new()
+    resolver = EcoreUriFragmentResolver
     @unresolvedReferences.each{ |uref|
       feature = uref.object.send(uref.feature_name)
       feature = feature[uref.index] unless uref.index.nil?
