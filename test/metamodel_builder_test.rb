@@ -227,7 +227,7 @@ class MetamodelBuilderTest < MiniTest::Test
     err = assert_raises StandardError do
       sc.allowed = :someSymbol
     end
-    assert_match /In (\w+::)+SimpleClass : Can not use a Symbol\(:someSymbol\) where a \[true,false\] is expected/, err.message
+    assert_match /In (\w+::)+SimpleClass : Can not use a Symbol\(someSymbol\)\(:someSymbol\) where a \[true,false\] is expected/, err.message
     err = assert_raises StandardError do
       sc.allowed = "a string"
     end
@@ -245,7 +245,7 @@ class MetamodelBuilderTest < MiniTest::Test
     err = assert_raises StandardError do
       sc.kind = :false
     end
-    assert_match /In (\w+::)+SimpleClass : Can not use a Symbol\(:false\) where a \[:simple,:extended\] is expected/, err.message
+    assert_match /In (\w+::)+SimpleClass : Can not use a Symbol\(false\)\(:false\) where a \[:simple,:extended\] is expected/, err.message
     err = assert_raises StandardError do
       sc.kind = "a string"
     end
@@ -616,7 +616,7 @@ class MetamodelBuilderTest < MiniTest::Test
     err = assert_raises StandardError do
       bc.addAClasses :notaaclass
     end
-    assert_match /In (\w+::)+BClassMM : Can not use a Symbol\(:notaaclass\) where a (\w+::)+AClassMM is expected/, err.message
+    assert_match /In (\w+::)+BClassMM : Can not use a Symbol\(notaaclass\)\(:notaaclass\) where a (\w+::)+AClassMM is expected/, err.message
     
     # remove the AClass from the BClass
     bc.removeAClasses ac
@@ -632,7 +632,7 @@ class MetamodelBuilderTest < MiniTest::Test
     err = assert_raises StandardError do
       ac.addBClasses :notabclass
     end
-    assert_match /In (\w+::)+AClassMM : Can not use a Symbol\(:notabclass\) where a (\w+::)+BClassMM is expected/, err.message
+    assert_match /In (\w+::)+AClassMM : Can not use a Symbol\(notabclass\)\(:notabclass\) where a (\w+::)+BClassMM is expected/, err.message
     
     # remove the BClass from the AClass
     ac.removeBClasses bc
