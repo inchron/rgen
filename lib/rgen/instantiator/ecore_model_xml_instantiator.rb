@@ -34,6 +34,7 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
     @unresolvedReferences = []
     @object_by_xmi_id = {}
     @object_by_ecore_id = {}
+    @efeature_cache = {}
     meta_models.each{|mm| add_meta_model(mm)}
   end
 
@@ -42,9 +43,7 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
     # Ignore root XMI container node
     return if node.tag == "xmi::XMI" && node.parent.nil?
     unless node.parent.nil? || node.parent.tag == "xmi::XMI"
-      parent_efeature = node.parent.object.class.ecore.eAllStructuralFeatures.find{|f|
-        f.name == node.tag
-      }
+      parent_efeature = get_efeature_by_name(node.parent.object.class, node.tag)
       if parent_efeature.nil?
         raise "Class '#{node.parent.object.class.name}' has no structual feature named '#{node.tag}'"
       end
@@ -60,16 +59,22 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
       end
       node.object = object
       node.attributes.each_pair { |k,v| set_feature(node, k, v) }
-    else
-      set_feature(node.parent, node.tag, node.chardata)
+    else parent_efeature.class <= EAttribute
+      # Nothing to do here. Node is an attribute node, but chardata is not
+      # set yet. On ascent the attribute value will be set on object of parent
+      # node.
     end
   end
 
   def on_ascent(node)
-    unless node.object.nil?
+    # Ignore root XMI container node
+    return if node.tag == "xmi::XMI" && node.parent.nil?
+    if node.object.nil? # Attribute node
+      node.chardata.each{ |value|
+        set_feature(node.parent, node.tag, value)
+      }
+    else # Object node
       node.children.each { |c| assoc_parent_with_child(node, c) }
-      node.object.class.has_attr 'chardata', Object unless node.object.respond_to?(:chardata)
-      set_feature(node, "chardata", node.chardata)
     end
   end
 
@@ -112,7 +117,7 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
   end
 
   def set_feature(node, feature_name, value)
-    eFeat = node.object.class.ecore.eAllStructuralFeatures.find{|f| f.name == feature_name}
+    eFeat = get_efeature_by_name(node.object&.class, feature_name)
     method_name = saneMethodName(feature_name)
     if eFeat.is_a?(EReference)
       if eFeat.getContainment
@@ -136,7 +141,11 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
       value = value.to_f if eFeat.eType == EFloat || eFeat.eType == EDouble
       value = value.to_sym if eFeat.eType.is_a?(EEnum)
       value = Date.parse(value) if eFeat.eType == EDate
-      node.object.setGeneric(method_name, value)
+      if eFeat.many
+        node.object.addGeneric(method_name, value)
+      else
+        node.object.setGeneric(method_name, value)
+      end
       if eFeat.iD
         @object_by_ecore_id[value] = node.object
       end
@@ -144,6 +153,21 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
   end
 
   private
+
+  def get_efeature_by_name(type, name)
+    return nil if type.nil?
+    efeature = @efeature_cache[type]&.[](name)
+    if efeature.nil?
+      efeature = type.ecore.eAllStructuralFeatures.find{
+        |f| f.name == name
+      }
+      unless efeature.nil?
+        @efeature_cache[type] ||= {}
+        @efeature_cache[type][name] = efeature
+      end
+    end
+    return efeature
+  end
 
   def add_meta_model(meta_model)
     if not meta_model.ecore.class <= EPackage
