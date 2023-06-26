@@ -50,17 +50,20 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
     end
 
     if parent_efeature.nil? || parent_efeature.class <= EReference
-      object = new_object(node, parent_efeature)
-      return if object.nil?
-      @env << object
-      if node.attributes["xmi:id"]
-        @object_by_xmi_id[node.attributes["xmi:id"]] = object
-        node.attributes.delete("xmi:id")
+      if node.attributes["href"].nil?
+        node.object = create_typed_object(node, parent_efeature)
+        return if node.object.nil?
+        @env << node.object
+        if node.attributes["xmi:id"]
+          @object_by_xmi_id[node.attributes["xmi:id"]] = node.object
+          node.attributes.delete("xmi:id")
+        end
+        node.attributes.each_pair { |k,v| set_feature(node, k, v) }
+      else
+        node.object = create_proxy_for_href(node)
       end
-      node.object = object
-      node.attributes.each_pair { |k,v| set_feature(node, k, v) }
-    else parent_efeature.class <= EAttribute
-      # Nothing to do here. Node is an attribute node, but chardata is not
+    else parent_efeature.class
+      # Nothing to do here. Node is an EAttribute node, but chardata is not
       # set yet. On ascent the attribute value will be set on object of parent
       # node.
     end
@@ -69,7 +72,7 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
   def on_ascent(node)
     # Ignore root XMI container node
     return if node.tag == "xmi::XMI" && node.parent.nil?
-    if node.object.nil? # Attribute node
+    if node.object.nil? # EAttribute node
       node.chardata.each{ |value|
         set_feature(node.parent, node.tag, value)
       }
@@ -78,7 +81,7 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
     end
   end
 
-  def new_object(node, parent_ereference)
+  def create_typed_object(node, parent_ereference)
     ns_desc = nil
     class_name = node.attributes["xsi:type"]
     node.attributes.delete("xsi:type")
@@ -100,7 +103,7 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
       class_name = saneClassName(ns_desc.nil? ? node.qtag : node.tag)
     end
     model = (ns_desc && ns_desc.target) || @default_meta_model
-    model.const_get(class_name).new
+    return model.const_get(class_name).new
   end
 
   def assoc_parent_with_child(parent, child)
@@ -124,8 +127,8 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
         raise "Can not set containment reference #{feature_name} at #{node.object.class.name} by ids."
       end
       if eFeat.many
-        value.split(" ").each{ |index|
-          proxy = RGen::MetamodelBuilder::MMProxy.new(index)
+        value.split(" ").each{ |identifier|
+          proxy = RGen::MetamodelBuilder::MMProxy.new(identifier)
           @unresolvedReferences << UnresolvedReference.new(node.object, feature_name, node.object.send(feature_name).length)
           node.object.addGeneric(method_name, proxy)
         }
@@ -153,6 +156,16 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
   end
 
   private
+
+  def create_proxy_for_href(node)
+    node.object = RGen::MetamodelBuilder::MMProxy.new(
+      node.attributes["href"],
+      is_external: true,
+      attributes: node.attributes.select {|key, value|
+        key != "href" && !key.start_with?("xsi:")
+      }
+    )
+  end
 
   def get_efeature_by_name(type, name)
     return nil if type.nil?
