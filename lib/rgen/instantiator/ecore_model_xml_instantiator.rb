@@ -41,8 +41,8 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
   def on_descent(node)
     parent_efeature = nil
     # Ignore root XMI container node
-    return if node.tag == "xmi::XMI" && node.parent.nil?
-    unless node.parent.nil? || node.parent.tag == "xmi::XMI"
+    return if node.tag == "xmi:XMI" && node.parent.nil?
+    unless node.parent.nil? || node.parent.tag == "xmi:XMI"
       parent_efeature = get_efeature_by_name(node.parent.object.class, node.tag)
       if parent_efeature.nil?
         raise "Class '#{node.parent.object.class.name}' has no structual feature named '#{node.tag}'"
@@ -71,7 +71,7 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
 
   def on_ascent(node)
     # Ignore root XMI container node
-    return if node.tag == "xmi::XMI" && node.parent.nil?
+    return if node.tag == "xmi:XMI" && node.parent.nil?
     if node.object.nil? # EAttribute node
       node.chardata.each{ |value|
         set_feature(node.parent, node.tag, value)
