@@ -50,8 +50,11 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
     end
 
     if parent_efeature.nil? || parent_efeature.class <= EReference
+
       if node.attributes["href"].nil?
-        node.object = create_typed_object(node, parent_efeature)
+        node_type = get_node_type(node, parent_efeature)
+        node.attributes.delete("xsi:type")
+        node.object = node_type.new
         return if node.object.nil?
         @env << node.object
         if node.attributes["xmi:id"]
@@ -60,7 +63,7 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
         end
         node.attributes.each_pair { |k,v| set_feature(node, k, v) }
       else
-        node.object = create_proxy_for_href(node)
+        node.object = create_proxy_for_href(node, parent_efeature)
       end
     else parent_efeature.class
       # Nothing to do here. Node is an EAttribute node, but chardata is not
@@ -79,31 +82,6 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
     else # Object node
       node.children.each { |c| assoc_parent_with_child(node, c) }
     end
-  end
-
-  def create_typed_object(node, parent_ereference)
-    ns_desc = nil
-    class_name = node.attributes["xsi:type"]
-    node.attributes.delete("xsi:type")
-    if !class_name.nil? && class_name != ""
-      xsi_type_parts = class_name.split(":")
-      if xsi_type_parts.length > 2
-        raise "'#{class_name}' is not a valid xsi:type."
-      end
-      class_name = xsi_type_parts.last
-      if xsi_type_parts.length > 1
-        ns_desc = @tag_ns_map[xsi_type_parts.first]
-      end
-    elsif not parent_ereference.nil?
-      type = parent_ereference.eType
-      ns_desc = @tag_ns_map[type.ePackage.nsPrefix]
-      class_name = type.name
-    else
-      ns_desc = @tag_ns_map[node.prefix]
-      class_name = saneClassName(ns_desc.nil? ? node.qtag : node.tag)
-    end
-    model = (ns_desc && ns_desc.target) || @default_meta_model
-    return model.const_get(class_name).new
   end
 
   def assoc_parent_with_child(parent, child)
@@ -157,13 +135,38 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
 
   private
 
-  def create_proxy_for_href(node)
+  def get_node_type(node, parent_ereference)
+    ns_desc = nil
+    class_name = node.attributes["xsi:type"]
+    if !class_name.nil? && class_name != ""
+      xsi_type_parts = class_name.split(":")
+      if xsi_type_parts.length > 2
+        raise "'#{class_name}' is not a valid xsi:type."
+      end
+      class_name = xsi_type_parts.last
+      if xsi_type_parts.length > 1
+        ns_desc = @tag_ns_map[xsi_type_parts.first]
+      end
+    elsif not parent_ereference.nil?
+      type = parent_ereference.eType
+      ns_desc = @tag_ns_map[type.ePackage.nsPrefix]
+      class_name = type.name
+    else
+      ns_desc = @tag_ns_map[node.prefix]
+      class_name = saneClassName(ns_desc.nil? ? node.qtag : node.tag)
+    end
+    model = (ns_desc && ns_desc.target) || @default_meta_model
+    return model.const_get(class_name)
+  end
+
+  def create_proxy_for_href(node, parent_efeature)
     node.object = RGen::MetamodelBuilder::MMProxy.new(
       node.attributes["href"],
       is_external: true,
       attributes: node.attributes.select {|key, value|
         key != "href" && !key.start_with?("xsi:")
-      }
+      },
+      type: get_node_type(node, parent_efeature)
     )
   end
 
