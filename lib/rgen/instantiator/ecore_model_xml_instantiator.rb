@@ -15,7 +15,9 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
   include RGen::ECore
 
   NamespaceDescriptor = Struct.new(:prefix, :target_name, :target)
-  UnresolvedReference = Struct.new(:object, :feature_name, :index)
+  # Struct to store unresolved non containment references which will be resolved
+  # after parsing (@see instantiate_file() and instantiate()).
+  UnresolvedReference = Struct.new(:object, :feature_name, :is_many, :value)
 
   INFO = 0
   WARN = 1
@@ -104,17 +106,9 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
       if eFeat.getContainment
         raise "Can not set containment reference #{feature_name} at #{node.object.class.name} by ids."
       end
-      if eFeat.many
-        value.split(" ").each{ |identifier|
-          proxy = RGen::MetamodelBuilder::MMProxy.new(identifier)
-          @unresolvedReferences << UnresolvedReference.new(node.object, feature_name, node.object.send(feature_name).length)
-          node.object.addGeneric(method_name, proxy)
-        }
-      else
-        proxy = RGen::MetamodelBuilder::MMProxy.new(value)
-        @unresolvedReferences << UnresolvedReference.new(node.object, feature_name, nil)
-        node.object.setGeneric(method_name, proxy)
-      end
+      @unresolvedReferences << UnresolvedReference.new(
+        node.object, feature_name, eFeat.many, value
+      )
     elsif not eFeat.nil?
       value = true if value == "true" && eFeat.eType == EBoolean
       value = false if value == "false" && eFeat.eType == EBoolean
@@ -198,28 +192,22 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
   def resolve
     resolver = EcoreUriFragmentResolver
     @unresolvedReferences.each{ |uref|
-      feature = uref.object.send(uref.feature_name)
-      feature = feature[uref.index] unless uref.index.nil?
-      # when using n:m references feature can already be resolved by opposite
-      next unless feature.class <= RGen::MetamodelBuilder::MMProxy
-      ref = @object_by_xmi_id[feature.targetIdentifier]
-      if ref.nil?
-        ref = @object_by_ecore_id[feature.targetIdentifier]
-      end
-      if ref.nil?
-        uri_fragment = @uri_fragment_mapper.map(feature.targetIdentifier)
-        ref = resolver.get_object_relative_to(uref.object, uri_fragment)
-      end
+      identifiers = uref.is_many ? uref.value.split(" ") : [uref.value]
+      # resolve identifiers, fallback to proxy object
+      references = identifiers.map { |identifier|
+        @object_by_xmi_id[identifier] \
+        || @object_by_ecore_id[identifier] \
+        || resolver.get_object_relative_to(
+            uref.object, @uri_fragment_mapper.map(identifier)
+          ) \
+        || RGen::MetamodelBuilder::MMProxy.new(
+            identifier, { rolver_info: "Target could not be resolved." }
+          )
+      }
       method_name = saneMethodName(uref.feature_name)
-      if ref.nil?
-        feature.data ||= {}
-        feature.data[:rolver_info] = "Target could not be resolved."
-      elsif uref.index.nil?
-        uref.object.setGeneric(method_name, ref)
-      else
-        uref.object.removeGeneric(method_name, feature)
-        uref.object.addGeneric(method_name, ref, uref.index)
-      end
+      uref.object.setGeneric(
+        method_name, uref.is_many ? references : references[0]
+      )
     }
     @unresolvedReferences = []
   end

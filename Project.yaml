@@ -1,7 +1,7 @@
 name: rgen
 gemspec: rgen.gemspec
 git: https://github.com/inchron/rgen.git
-version: 1.0.1
+version: 1.0.3
 summary: Ruby Modelling and Generator Framework
 email:
 homepage: http://ruby-gen.org
