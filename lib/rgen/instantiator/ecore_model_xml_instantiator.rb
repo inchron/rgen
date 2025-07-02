@@ -183,6 +183,9 @@ class EcoreModelXmlInstantiator < NodebasedXMLInstantiator
     if not meta_model.ecore.class <= EPackage
       raise ArgumentError.new("Only meta models supported which ecore class type is RGen::ECore::EPackage")
     end
+    if meta_model.ecore.nsPrefix.nil?
+      raise ArgumentError.new("Only meta models with nsPrefix supported (no nsPrefix for #{meta_model.name})")
+    end
     @tag_ns_map[meta_model.ecore.nsPrefix] = NamespaceDescriptor.new(meta_model.ecore.nsPrefix, meta_model.name, meta_model)
     meta_model.ecore.eSubpackages.each { |sp|
       add_meta_model(meta_model.const_get(sp.name))

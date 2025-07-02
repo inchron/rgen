@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ecore:EPackage xmi:version="2.0"
-    xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="HouseMetamodel">
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    nsURI="http://example.com/house"
+    nsPrefix="house"
+    name="HouseMetamodel">
   <eClassifiers xsi:type="ecore:EClass" name="House">
     <eAnnotations source="bla">
       <details key="abc" value="A &quot;text&quot; with some 'quotes'."/>
@@ -30,7 +34,10 @@
     <eLiterals name="male"/>
     <eLiterals name="female"/>
   </eClassifiers>
-  <eSubpackages name="Rooms">
+  <eSubpackages
+      nsURI="http://example.com/house/rooms"
+      nsPrefix="rooms"
+      name="Rooms">
     <eClassifiers xsi:type="ecore:EClass" name="Room">
       <eStructuralFeatures xsi:type="ecore:EReference" name="house" eType="#//House"
           defaultValueLiteral="" eOpposite="#//House/room"/>

@@ -12,20 +12,20 @@ module MetamodelBuilder
 # by the class methods of MetamodelBuilder::BuilderExtensions
 module BuilderRuntime
 	include Util::NameHelper
-	
+
 	def is_a?(c)
     return super unless c.const_defined?(:ClassModule)
     kind_of?(c::ClassModule)
 	end
-	
+
 	def addGeneric(role, value, index=-1)
 		send("add#{firstToUpper(role.to_s)}",value, index)
 	end
-	
+
 	def removeGeneric(role, value)
 		send("remove#{firstToUpper(role.to_s)}",value)
 	end
-	
+
 	def setGeneric(role, value)
 		send("set#{firstToUpper(role.to_s)}",value)
 	end
@@ -101,9 +101,9 @@ module BuilderRuntime
     end
   end
 
-  # if a block is given, calls the block on every contained element in depth first order. 
+  # if a block is given, calls the block on every contained element in depth first order.
   # if the block returns :prune, recursion will stop at this point.
-  # 
+  #
   # BEWARE of concurrent modification of contained elements while iterating!
   # (adding/removing containers or contained elements)
   # if you need to do such modifications, use the variant without a block instead.
@@ -161,7 +161,7 @@ module BuilderRuntime
   end
 
 	def _assignmentTypeError(target, value, expected)
-		text = ""
+		text = String.new
 		if target
 			targetId = target.class.name
 			targetId += "(" + target.name + ")" if target.respond_to?(:name) and target.name

@@ -1,6 +1,8 @@
 = RGen - Ruby Modelling and Generator Framework
 
-RGen is a framework for Model Driven Software Development (MDSD) in Ruby.
+This is a fork of https://github.com/mthiede/rgen
+
+RGen is a framework for Model Driven Software Development (MDSD)in Ruby.
 This means that it helps you build Metamodels, instantiate Models, modify
 and transform Models and finally generate arbitrary textual content from it.
 
@@ -19,12 +21,14 @@ RGen features include:
 * ECore XML support (XMI 2.0)
 * JSON instantiator and serializer, and ECore-to-JSON export
 * UML-to-ECore and ECore-to-UML transformation (UML class models)
-* Enterprise Architect support (UML1.3/XMI1.1) 
+* Enterprise Architect support (UML1.3/XMI1.1)
+* Loading interdependent EPackages from different files
+* Cross document references
 
 
 == Download
 
-Get the latest release from Github: https://github.com/mthiede/rgen
+Get the latest release from Github: https://github.com/inchron/rgen
 
 
 == Installation
@@ -49,7 +53,7 @@ instantiator, the metamodel builder, the transformer, the template language and 
 metamodel generator.
 
 
-== Running the Tests 
+== Running the Tests
 
 Run the test suite from the top of the working tree:
 
@@ -83,16 +87,15 @@ Metamodel Definition:
 Instantiation:
   lib/rgen/instantiator/xmi11_instantiator.rb
   lib/rgen/instantiator/ecore_xml_instantiator.rb
-  
+
 Transformations:
   lib/rgen/ecore/ruby_to_ecore.rb
   lib/transformers/uml13_to_ecore.rb
-  
+
 Generators:
   lib/mmgen/metamodel_generator.rb
 
-  
+
 == License
 
 RGen is released under the MIT license.
-
