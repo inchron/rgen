@@ -1,3 +1,5 @@
+require 'uri'
+
 module RGen
 
 module Instantiator
@@ -5,7 +7,7 @@ module Instantiator
 class EcoreUriFragmentResolver
   class << self
     def get_object_relative_to(object, uri_fragment)
-      return nil if uri_fragment.blank? || uri_fragment[0] != "/"
+      return nil if uri_fragment.nil? || uri_fragment.empty? || uri_fragment[0] != "/"
 
       get_object_for_uri_fragment_path(object, uri_fragment)
     end
@@ -24,12 +26,12 @@ class EcoreUriFragmentResolver
         return nil if current_object.nil?
         segment = extract_feature_and_id_from_uri_fragment_segment(path_segment)
         feature_name = segment.feature_name
-        return nil if feature_name.blank?
+        return nil if feature_name.nil? || feature_name.empty?
         return nil unless current_object.class.ecore.eAllStructuralFeatures.any?{|f| f.name == feature_name}
         feature = current_object.send(feature_name)
         return nil if feature.nil?
         id = segment.id
-        if id.blank?
+        if id.nil? || id.empty?
           current_object = feature
         else
           current_object = feature.find{|o|

@@ -4,23 +4,25 @@ module HouseMetamodel
    extend RGen::MetamodelBuilder::ModuleExtension
    include RGen::MetamodelBuilder::DataTypes
 
+   EcoreNsURI = "http://example.com/house"
+   EcoreNsPrefix = "house"
    SexEnum = Enum.new(:name => 'SexEnum', :literals =>[ :male, :female ])
 
 
    class House < RGen::MetamodelBuilder::MMBase
       annotation :source => "bla", :details => {"abc" => "A \"text\" with some 'quotes'."}
-      has_attr 'address', String, :changeable => false 
+      has_attr 'address', String, :changeable => false, :iD => false 
    end
 
    class MeetingPlace < RGen::MetamodelBuilder::MMBase
    end
 
    class Person < RGen::MetamodelBuilder::MMBase
-      has_attr 'sex', HouseMetamodel::SexEnum 
-      has_attr 'id', Long 
-      has_attr 'height', Double 
-      has_attr 'birthday', Date 
-      has_many_attr 'nicknames', String 
+      has_attr 'sex', HouseMetamodel::SexEnum, :iD => false 
+      has_attr 'id', Long, :iD => false 
+      has_attr 'height', Double, :iD => false 
+      has_attr 'birthday', Date, :iD => false 
+      has_many_attr 'nicknames', String, :iD => false 
    end
 
 
@@ -28,6 +30,8 @@ module HouseMetamodel
       extend RGen::MetamodelBuilder::ModuleExtension
       include RGen::MetamodelBuilder::DataTypes
 
+      EcoreNsURI = "http://example.com/house/rooms"
+      EcoreNsPrefix = "rooms"
 
 
       class Room < RGen::MetamodelBuilder::MMBase
