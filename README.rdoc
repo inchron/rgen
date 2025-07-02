@@ -1,29 +1,33 @@
 = RGen - Ruby Modelling and Generator Framework
 
+This is a fork of https://github.com/mthiede/rgen
+
 RGen is a framework for Model Driven Software Development (MDSD)in Ruby.
 This means that it helps you build Metamodels, instantiate Models, modify
 and transform Models and finally generate arbitrary textual content from it.
 
 RGen features include:
-* Supporting Ruby 1.8.7, 1.9.x, 2.0, 2.1, 2.2
+* Supporting Ruby 2.7, 3.0, 3.1, 3.2
 * Metamodel definition language (internal Ruby DSL)
 * ECore Meta-metamodel with an ECore instance available for every Metamodel
 * Generator creating the Ruby metamodel definition from an ECore instance
 * Transformer creating Ruby metamodel classes/modules from an ECore instance
 * Instantiation of Metamodels, i.e. creation of Models (e.g. from XML)
 * Model builder, internal Ruby DSL
-* Model fragmentation over several several files and per-fragment caching
+* Model fragmentation over several files and per-fragment caching
 * Model Transformation language (internal Ruby DSL)
 * Powerful template based generator language (internal Ruby DSL inside of ERB)
 * UML 1.3 metamodel and XMI 1.1 instantiator included
 * ECore XML support (XMI 2.0)
 * UML-to-ECore and ECore-to-UML transformation (UML class models)
-* Enterprise Architect support (UML1.3/XMI1.1) 
+* Enterprise Architect support (UML1.3/XMI1.1)
+* Loading interdependent EPackages from different files
+* Cross document references
 
 
 == Download
 
-Get the latest release from Github: https://github.com/mthiede/rgen
+Get the latest release from Github: https://github.com/inchron/rgen
 
 
 == Installation
@@ -33,7 +37,7 @@ Install RGen as a Ruby gem:
   gem install rgen
 
 
-== Running the Tests 
+== Running the Tests
 
 Change to the 'test' folder and run the test suite:
 
@@ -43,7 +47,7 @@ Change to the 'test' folder and run the test suite:
 
 == Documentation
 
-RDoc documentation is available at Github: http://mthiede.github.com/rgen/
+RDoc documentation is available at RubyDoc: https://www.rubydoc.info/gems/rgen
 
 Find the main documentation parts for:
 * RGen::MetamodelBuilder
@@ -63,16 +67,15 @@ Metamodel Definition:
 Instantiation:
   lib/rgen/instantiator/xmi11_instantiator.rb
   lib/rgen/instantiator/ecore_xml_instantiator.rb
-  
+
 Transformations:
   lib/rgen/ecore/ruby_to_ecore.rb
   lib/transformers/uml13_to_ecore.rb
-  
+
 Generators:
   lib/mmgen/metamodel_generator.rb
 
-  
+
 == License
 
 RGen is released under the MIT license.
-

@@ -3,21 +3,22 @@ require 'rgen/instantiator/abstract_xml_instantiator'
 require 'rgen/array_extensions'
 
 class ECoreXMLInstantiator < AbstractXMLInstantiator
-  
+
   include RGen::ECore
-  
+
   INFO = 0
   WARN = 1
   ERROR = 2
-  
+
   def initialize(env, loglevel=ERROR)
     @env = env
+    @ecoreFileName = ""
     @rolestack = []
     @elementstack = []
     @element_by_id = {}
     @loglevel = loglevel
   end
-  
+
   def start_tag(prefix, tag, namespaces, attributes)
     eRef = nil
     if @elementstack.last
@@ -26,7 +27,7 @@ class ECoreXMLInstantiator < AbstractXMLInstantiator
         if attributes["xsi:type"] && attributes["xsi:type"] =~ /ecore:(\w+)/
           class_name = $1
           attributes.delete("xsi:type")
-        else 
+        else
           class_name = eRef.eType.name
         end
       else
@@ -35,7 +36,7 @@ class ECoreXMLInstantiator < AbstractXMLInstantiator
     else
       class_name = tag
     end
-    
+
     eClass = RGen::ECore.ecore.eClassifiers.find{|c| c.name == class_name}
     if eClass
       obj = RGen::ECore.const_get(class_name).new
@@ -61,13 +62,13 @@ class ECoreXMLInstantiator < AbstractXMLInstantiator
       set_attribute_internal(attr, value)
     end
   end
-  
+
   def end_tag(prefix, tag)
     @elementstack.pop
   end
-  
+
   ResolverDescription = Struct.new(:object, :attribute, :value)
-  
+
   def set_attribute(attr, value)
     # do nothing, already handled by start_tag/set_attribute_internal
   end
@@ -92,15 +93,19 @@ class ECoreXMLInstantiator < AbstractXMLInstantiator
       log WARN, "Feature not found: #{attr} on #{@elementstack.last}"
     end
   end
-  
-  def instantiate(str)
+
+  def instantiate(name, file)
     @resolver_descs = []
 #    puts "Instantiating ..."
-    super(str, 1000)
-    rootpackage = @env.find(:class => EPackage).first
+    super(file.read, 1000)
+    rp = @env.rootPackage(name)
+    @env.resourceAdd(name, File.basename(file.path), rp&.nsURI, rp)
+    @ecoreFileName = File.basename(file.path)
+
 #    puts "Resolving ..."
     @resolver_descs.each do |rd|
-      refed = find_referenced(rootpackage, rd.value)
+      refed = find_referenced(rd.value)
+      raise StandardError.new("Reference not found for: #{rd.attribute}: #{rd.value}") if refed.empty?
       feature = eAllStructuralFeatures(rd.object).find{|f| f.name == rd.attribute}
       raise StandardError.new("StructuralFeature not found: #{rd.attribute}") unless feature
       if feature.many
@@ -110,51 +115,73 @@ class ECoreXMLInstantiator < AbstractXMLInstantiator
       end
     end
   end
-  
+
   def eAllReferences(element)
     @eAllReferences ||= {}
     @eAllReferences[element.class] ||= element.class.ecore.eAllReferences
   end
-  
+
   def eAllAttributes(element)
     @eAllAttributes ||= {}
     @eAllAttributes[element.class] ||= element.class.ecore.eAllAttributes
   end
-  
+
   def eAllStructuralFeatures(element)
     @eAllStructuralFeatures ||= {}
     @eAllStructuralFeatures[element.class] ||= element.class.ecore.eAllStructuralFeatures
   end
-  
-  def find_referenced(context, desc)
-    desc.split(/\s+/).collect do |r|
-      if r =~ /^#([^\/]+)$/
-        @element_by_id[$1]
-      elsif r =~ /^#\/\d*\/([\w\/]+)/
-        find_in_context(context, $1.split('/'))
-      elsif r =~ /#\/\/(\w+)$/
-        case $1
-          when "EString";     RGen::ECore::EString
-          when "EInt";        RGen::ECore::EInt
-          when "ELong";       RGen::ECore::ELong
-          when "EBoolean";    RGen::ECore::EBoolean
-          when "EFloat";      RGen::ECore::EFloat
-          when "EDouble";     RGen::ECore::EDouble
-          when "EDate";       RGen::ECore::EDate
-          when "EJavaObject"; RGen::ECore::EJavaObject
-          when "EJavaClass";  RGen::ECore::EJavaClass
+
+  # context is an array of packages
+  def find_referenced(desc)
+    def builtin_types(str)
+      case str
+        when "EString";     RGen::ECore::EString
+        when "EInt";        RGen::ECore::EInt
+        when "ELong";       RGen::ECore::ELong
+        when "EBoolean";    RGen::ECore::EBoolean
+        when "EFloat";      RGen::ECore::EFloat
+        when "EDouble";     RGen::ECore::EDouble
+        when "EDate";       RGen::ECore::EDate
+        when "EObject";     RGen::ECore::EObject
+        when "EJavaObject"; RGen::ECore::EJavaObject
+        when "EJavaClass";  RGen::ECore::EJavaClass
+        else raise StandardError.new("No translation for '#{str}'")
+      end
+    end
+
+    match = desc.scan(/(?:ecore:([\w]*)\s)?([^\s]*)?#\/\d*\/([\w\/]+)/)
+    if match
+      # match is a nested array
+      match.collect do |m|
+        type = m[0]
+        uri = m[1]
+        object = m[2]
+
+        if type == "EDataType" && !uri.nil? && uri == "http://www.eclipse.org/emf/2002/Ecore"
+            builtin_types(object)
+        else
+          ctx = @env.contextFor(uri, @ecoreFileName)
+          raise StandardError.new("No suitable context found for '#{uri}'") if ctx.nil?
+          find_in_context(ctx, object.split('/'))
         end
       end
+
+    elsif desc.match(/^#([^\/]+)$/)
+      # This is matched when xmi:id is used
+      @element_by_id[$1]
+
+    else
+      raise "Could not find reference for '#{desc}'"
     end.compact
   end
-  
+
   def find_in_context(context, desc_elements)
     if context.is_a?(EPackage)
       r = (context.eClassifiers + context.eSubpackages).find{|c| c.name == desc_elements.first}
     elsif context.is_a?(EClass)
       r = context.eStructuralFeatures.find{|s| s.name == desc_elements.first}
     else
-      raise StandardError.new("Don't know how to find #{desc_elements.join('/')} in context #{context}")
+      raise StandardError.new("Don't know how to find #{desc_elements.join('/')} in context '#{context.name}' (#{context})")
     end
     if r
       if desc_elements.size > 1
@@ -166,7 +193,7 @@ class ECoreXMLInstantiator < AbstractXMLInstantiator
       log WARN, "Can not follow path, element #{desc_elements.first} not found within #{context}(#{context.name})"
     end
   end
-  
+
   def log(level, msg)
     puts %w(INFO WARN ERROR)[level] + ": " + msg if level >= @loglevel
   end
