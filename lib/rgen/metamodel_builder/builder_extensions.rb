@@ -544,7 +544,7 @@ module BuilderExtensions
   end
   
   def type_check_code(varname, props)
-    code = ""
+    code = +""
     if props.impl_type == RGen::MetamodelBuilder::DataTypes::Long
       code << "unless #{varname}.nil? || #{varname}.is_a?(Integer) || #{varname}.is_a?(MMGeneric)"
       code << "\n"

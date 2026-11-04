@@ -312,7 +312,7 @@ class MetamodelBuilderTest < Minitest::Test
     assert_equal ["a", "b", "b", "a"], o.literals
     assert o.literals[0].object_id == o.literals[3].object_id
     # removing works by object identity, so providing a new string won't delete an existing one
-    o.removeLiterals("a")
+    o.removeLiterals("a".dup)
     assert_equal ["a", "b", "b", "a"], o.literals
     theA = o.literals.first
     # each remove command removes only one element: remove first "a"
