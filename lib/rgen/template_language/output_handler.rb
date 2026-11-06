@@ -12,7 +12,7 @@ module TemplateLanguage
       self.mode = mode
       @indentString = indentString
       @state = :wait_for_nonws
-      @output = ""
+      @output = +""
       @indent_string = @indentString*indent
     end
 

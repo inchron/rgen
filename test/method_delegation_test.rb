@@ -62,7 +62,7 @@ class MethodDelegationTest < Minitest::Test
   
   def test_method_defined_in_class
     # delegator is a String
-    delegator = "Delegator1"
+    delegator = +"Delegator1"
     checkDelegation(delegator, "to_s", "Delegator1")
   end
   
@@ -75,7 +75,7 @@ class MethodDelegationTest < Minitest::Test
   
   def test_new_method
     # delegator is an String
-    delegator = "Delegator2"
+    delegator = +"Delegator2"
     # delegating method is a new method which does not exist on String
     checkDelegation(delegator, "artificialMethod", delegator.object_id, true)
   end
